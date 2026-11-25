@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../models/pendonor_profile.dart';
 import '../../services/api_service.dart';
 import '../home/home_screen.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
-  final PendonorProfile? initialProfile;
-
-  const CompleteProfileScreen({super.key, this.initialProfile});
+  const CompleteProfileScreen({super.key});
 
   @override
   State<CompleteProfileScreen> createState() => _CompleteProfileScreenState();
@@ -14,40 +11,25 @@ class CompleteProfileScreen extends StatefulWidget {
 
 class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
-  late final TextEditingController _nimController;
-  late final TextEditingController _phoneController;
-  late final TextEditingController _facultyController;
+  final _nameController = TextEditingController();
+  final _nimController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _facultyController = TextEditingController();
 
-  late String _selectedBloodType;
-  late bool _isWillingToDonate;
+  String _selectedBloodType = 'A';
+  bool _isWillingToDonate = true;
   bool _isSaving = false;
 
-  static const List<String> _bloodTypes = ['A', 'B', 'AB', 'O', 'Belum Tahu'];
-
-  @override
-  void initState() {
-    super.initState();
-    final p = widget.initialProfile;
-    _nameController = TextEditingController(text: p?.namaLengkap ?? '');
-    _nimController = TextEditingController(text: p?.nimIdCivitas ?? '');
-    _phoneController = TextEditingController(text: p?.noTelepon ?? '');
-    _facultyController = TextEditingController(text: p?.fakultasUnit ?? '');
-    _selectedBloodType =
-        _bloodTypes.contains(p?.golonganDarah) ? p!.golonganDarah : 'A';
-    _isWillingToDonate = p?.bersediaDonor ?? true;
-  }
+  final List<String> _bloodTypes = ['A', 'B', 'AB', 'O', 'Belum Tahu'];
 
   void _showError(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(msg),
-          backgroundColor: const Color(0xFFD9383A),
-        ),
-      );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: const Color(0xFFD9383A),
+      ),
+    );
   }
 
   Future<void> _saveProfile() async {
@@ -55,38 +37,36 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     setState(() => _isSaving = true);
 
-    final draft = PendonorProfile(
-      namaLengkap: _nameController.text.trim(),
-      nimIdCivitas: _nimController.text.trim(),
-      noTelepon: _phoneController.text.trim(),
-      fakultasUnit: _facultyController.text.trim(),
-      golonganDarah: _selectedBloodType,
-      bersediaDonor: _isWillingToDonate,
-    );
+    try {
+      final result = await ApiService.savePendonorProfile(
+        namaLengkap: _nameController.text.trim(),
+        nimIdCivitas: _nimController.text.trim(),
+        noTelepon: _phoneController.text.trim(),
+        fakultasUnit: _facultyController.text.trim(),
+        golonganDarah: _selectedBloodType,
+        bersediaDonor: _isWillingToDonate,
+      );
 
-    final res = await ApiService.savePendonorProfile(draft);
-    if (!mounted) return;
-    setState(() => _isSaving = false);
-
-    if (!res.ok) {
-      _showError(res.message);
-      return;
+      final data = result['data'] as Map<String, dynamic>;
+      if (result['ok'] == true) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              showSuccessBanner: true,
+              initialProfile: data['profile'] as Map<String, dynamic>?,
+            ),
+          ),
+        );
+      } else {
+        _showError(data['message'] ?? 'Gagal menyimpan profil');
+      }
+    } catch (e) {
+      _showError('Gagal terhubung ke server: $e');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-
-    final savedMap = res.raw['profile'];
-    final savedProfile = savedMap is Map<String, dynamic>
-        ? PendonorProfile.fromJson(savedMap)
-        : draft;
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => HomeScreen(
-          showSuccessBanner: true,
-          initialProfile: savedProfile,
-        ),
-      ),
-    );
   }
 
   @override
@@ -115,7 +95,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
@@ -132,30 +112,29 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              _buildField(
+              _buildInputField(
                 controller: _nameController,
                 hint: 'Nama Lengkap',
                 icon: Icons.person_outline,
               ),
               const SizedBox(height: 12),
-              _buildField(
+              _buildInputField(
                 controller: _nimController,
                 hint: 'NIM / ID Civitas',
                 icon: Icons.badge_outlined,
               ),
               const SizedBox(height: 12),
-              _buildField(
+              _buildInputField(
                 controller: _phoneController,
                 hint: 'Nomor Telepon',
                 icon: Icons.phone_outlined,
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 12),
-              _buildField(
+              _buildInputField(
                 controller: _facultyController,
                 hint: 'Fakultas / Unit',
                 icon: Icons.apartment_outlined,
-                textInputAction: TextInputAction.done,
               ),
               const SizedBox(height: 24),
               const Row(
@@ -173,23 +152,25 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: _bloodTypes.map((type) {
-                  final selected = _selectedBloodType == type;
+                  final isSelected = _selectedBloodType == type;
                   return ChoiceChip(
                     label: Text(type),
-                    selected: selected,
-                    onSelected: (isSel) {
-                      if (isSel) setState(() => _selectedBloodType = type);
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() => _selectedBloodType = type);
+                      }
                     },
                     selectedColor: const Color(0xFF1E6BB8),
                     backgroundColor: Colors.white,
                     labelStyle: TextStyle(
-                      color: selected ? Colors.white : Colors.black87,
+                      color: isSelected ? Colors.white : Colors.black87,
                       fontWeight: FontWeight.w600,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
-                        color: selected ? const Color(0xFF1E6BB8) : Colors.grey.shade400,
+                        color: isSelected ? const Color(0xFF1E6BB8) : Colors.grey.shade400,
                       ),
                     ),
                   );
@@ -201,7 +182,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   Switch(
                     value: _isWillingToDonate,
                     activeColor: const Color(0xFF1E6BB8),
-                    onChanged: (v) => setState(() => _isWillingToDonate = v),
+                    onChanged: (val) => setState(() => _isWillingToDonate = val),
                   ),
                   const SizedBox(width: 8),
                   const Expanded(
@@ -247,19 +228,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     );
   }
 
-  Widget _buildField({
+  Widget _buildInputField({
     required TextEditingController controller,
     required String hint,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
-    TextInputAction textInputAction = TextInputAction.next,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      textInputAction: textInputAction,
       validator: (val) {
-        if (val == null || val.trim().isEmpty) return '$hint wajib diisi';
+        if (val == null || val.trim().isEmpty) {
+          return '$hint wajib diisi';
+        }
         return null;
       },
       decoration: InputDecoration(
