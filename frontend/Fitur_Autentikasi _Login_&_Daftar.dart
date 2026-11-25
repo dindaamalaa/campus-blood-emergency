@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/donor_profile.dart';
 import '../../services/api_service.dart';
 import '../profile/complete_profile_screen.dart';
 import '../home/home_screen.dart';
@@ -44,20 +45,24 @@ class _AuthScreenState extends State<AuthScreen> {
           password: password,
         );
 
-        final data = result['data'] as Map<String, dynamic>;
         if (result['ok'] == true) {
-          final hasProfile = data['hasProfile'] == true;
+          final hasProfile = result['hasProfile'] == true;
+          final profile = result['profile'] as DonorProfile?;
+
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => hasProfile
-                  ? const HomeScreen(showSuccessBanner: false)
+                  ? HomeScreen(
+                      showSuccessBanner: false,
+                      initialProfile: profile,
+                    )
                   : const CompleteProfileScreen(),
             ),
           );
         } else {
-          _showMessage(data['message'] ?? 'Login gagal', isError: true);
+          _showMessage(result['message'] ?? 'Login gagal', isError: true);
         }
       } else {
         final result = await ApiService.register(
@@ -65,9 +70,8 @@ class _AuthScreenState extends State<AuthScreen> {
           password: password,
         );
 
-        final data = result['data'] as Map<String, dynamic>;
         if (result['ok'] == true) {
-          _showMessage(data['message'] ?? 'Registrasi berhasil, lengkapi profil');
+          _showMessage(result['message'] ?? 'Registrasi berhasil, lengkapi profil');
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
@@ -76,7 +80,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           );
         } else {
-          _showMessage(data['message'] ?? 'Pendaftaran gagal', isError: true);
+          _showMessage(result['message'] ?? 'Pendaftaran gagal', isError: true);
         }
       }
     } catch (e) {
