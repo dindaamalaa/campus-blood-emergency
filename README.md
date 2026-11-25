@@ -33,14 +33,11 @@ Project ini dikembangkan secara kolaboratif menggunakan GitHub sebagai media pen
 
 | Technology | Description |
 |---|---|
-| 🐘 PHP | Bahasa pemrograman backend. |
-| 🗄️ MySQL | Sistem manajemen database. |
-| 🖥️ HTML | Struktur halaman website. |
-| 🎨 CSS | Mengatur tampilan dan desain website. |
-| ⚡ JavaScript | Menambahkan interaksi pada website. |
-| 🧰 Laragon | Local development environment. |
+| 📱 Flutter | Framework pengembangan aplikasi. |
+| 🎯 Dart | Bahasa pemrograman aplikasi. |
+| 🗄️ MySQL | Database aplikasi. |
 | 🐙 GitHub | Penyimpanan kode dan kolaborasi tim. |
-| 💻 Visual Studio Code | Code editor untuk pengembangan aplikasi. |
+| 💻 Visual Studio Code | Code editor pengembangan aplikasi. |
 
 ---
 
