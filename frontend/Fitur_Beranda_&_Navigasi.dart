@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import '../../models/pendonor_profile.dart';
+import '../../services/api_service.dart';
+import '../profile/complete_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool showSuccessBanner;
+  final PendonorProfile? initialProfile;
 
-  const HomeScreen({super.key, this.showSuccessBanner = false});
+  const HomeScreen({
+    super.key,
+    this.showSuccessBanner = false,
+    this.initialProfile,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -11,6 +19,33 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  PendonorProfile? _profile;
+
+  @override
+  void initState() {
+    super.initState();
+    _profile = widget.initialProfile;
+    _refreshBeranda();
+  }
+
+  Future<void> _refreshBeranda() async {
+    final res = await ApiService.getBeranda();
+    if (!mounted || !res.ok) return;
+
+    final pMap = res.raw['profile'];
+    if (pMap is Map<String, dynamic>) {
+      setState(() => _profile = PendonorProfile.fromJson(pMap));
+    }
+  }
+
+  void _openEditProfile() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CompleteProfileScreen(initialProfile: _profile),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +53,10 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
         child: _selectedIndex == 0
-            ? _buildBerandaContent()
+            ? RefreshIndicator(
+                onRefresh: _refreshBeranda,
+                child: _buildBerandaContent(),
+              )
             : Center(
                 child: Text(
                   'Halaman ${['Beranda', 'Jadwal', 'Riwayat', 'Profil'][_selectedIndex]}',
@@ -28,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        onTap: (i) => setState(() => _selectedIndex = i),
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFFD9383A),
         unselectedItemColor: Colors.grey,
@@ -43,12 +81,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBerandaContent() {
+    final nama = _profile?.namaLengkap ?? '';
+    final golDarah = _profile?.golonganDarah;
+    final greeting = nama.isNotEmpty ? 'Halo, $nama!' : 'Halo, Pendonor!';
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Notifikasi Hijau (Muncul jika baru selesai melengkapi profil)
           if (widget.showSuccessBanner) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -74,11 +116,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 16),
           ],
-
-          // Header Sapaan
-          const Text(
-            'Halo, Pendonor!',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+          Text(
+            greeting,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
           const SizedBox(height: 4),
           const Text(
@@ -86,8 +130,6 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: 13, color: Colors.grey),
           ),
           const SizedBox(height: 20),
-
-          // Hero Card Ajakan Donor
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
@@ -151,63 +193,65 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 24),
-
-          // Section Profil Pendonor
           const Text(
             'Profil pendonor',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE8F5E9),
-                    shape: BoxShape.circle,
+          InkWell(
+            onTap: _openEditProfile,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE8F5E9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check, color: Color(0xFF2E7D32), size: 18),
                   ),
-                  child: const Icon(Icons.check, color: Color(0xFF2E7D32), size: 18),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Profil sudah lengkap',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Kelola identitas dan golongan darah',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Lihat profil',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFFD9383A),
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Profil sudah lengkap',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          golDarah != null && golDarah.isNotEmpty
+                              ? 'Golongan darah: $golDarah • Kelola identitas'
+                              : 'Kelola identitas dan golongan darah',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Lihat profil',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFD9383A),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
-              ],
+                  const Icon(Icons.chevron_right, color: Colors.grey),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),
-
-          // Section Jadwal Donormu
           const Text(
             'Jadwal donormu',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -263,8 +307,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // Card Panduan Persiapan Donor
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
