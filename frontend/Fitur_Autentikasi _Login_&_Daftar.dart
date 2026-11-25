@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/pendonor_profile.dart';
 import '../../services/api_service.dart';
 import '../profile/complete_profile_screen.dart';
 import '../home/home_screen.dart';
@@ -12,85 +11,79 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  bool _isLogin = true;
-  bool _isLoading = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
+  bool isLogin = true;
+  bool isLoading = false;
 
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  void _showSnack(String message, {bool isError = false}) {
+  void _showMessage(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: isError ? const Color(0xFFD9383A) : const Color(0xFF2E7D32),
-        ),
-      );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? const Color(0xFFD9383A) : const Color(0xFF2E7D32),
+      ),
+    );
   }
 
-  Future<void> _handleSubmit() async {
+  Future<void> _submitAuth() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
+    setState(() => isLoading = true);
 
-    if (_isLogin) {
-      final res = await ApiService.login(emailKampus: email, password: password);
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
 
-      if (!res.ok) {
-        _showSnack(res.message, isError: true);
-        return;
+      if (isLogin) {
+        final result = await ApiService.login(
+          emailKampus: email,
+          password: password,
+        );
+
+        final data = result['data'] as Map<String, dynamic>;
+        if (result['ok'] == true) {
+          final hasProfile = data['hasProfile'] == true;
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => hasProfile
+                  ? const HomeScreen(showSuccessBanner: false)
+                  : const CompleteProfileScreen(),
+            ),
+          );
+        } else {
+          _showMessage(data['message'] ?? 'Login gagal', isError: true);
+        }
+      } else {
+        final result = await ApiService.register(
+          emailKampus: email,
+          password: password,
+        );
+
+        final data = result['data'] as Map<String, dynamic>;
+        if (result['ok'] == true) {
+          _showMessage(data['message'] ?? 'Registrasi berhasil, lengkapi profil');
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CompleteProfileScreen(),
+            ),
+          );
+        } else {
+          _showMessage(data['message'] ?? 'Pendaftaran gagal', isError: true);
+        }
       }
-
-      final hasProfile = res.raw['hasProfile'] == true;
-      final profileMap = res.raw['profile'];
-      final profile = profileMap is Map<String, dynamic>
-          ? PendonorProfile.fromJson(profileMap)
-          : null;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => hasProfile
-              ? HomeScreen(showSuccessBanner: false, initialProfile: profile)
-              : CompleteProfileScreen(initialProfile: profile),
-        ),
-      );
-    } else {
-      final res = await ApiService.register(emailKampus: email, password: password);
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      if (!res.ok) {
-        _showSnack(res.message, isError: true);
-        return;
-      }
-
-      _showSnack(res.message);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const CompleteProfileScreen(),
-        ),
-      );
+    } catch (e) {
+      _showMessage('Tidak dapat terhubung ke server: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-  }
-
-  void _toggleMode() {
-    setState(() {
-      _isLogin = !_isLogin;
-      _confirmPasswordController.clear();
-      _formKey.currentState?.reset();
-    });
   }
 
   @override
@@ -122,7 +115,7 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24.0),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -130,7 +123,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   children: [
                     const SizedBox(height: 24),
                     Text(
-                      _isLogin ? 'Masuk dengan Email kampus' : 'Daftar Akun Kampus Baru',
+                      isLogin ? 'Masuk dengan Email kampus' : 'Daftar Akun Kampus Baru',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Color(0xFF4A78D0),
@@ -142,18 +135,18 @@ class _AuthScreenState extends State<AuthScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: 'nama@kampus.ac.id',
                         prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF4A78D0)),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                         contentPadding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      validator: (val) {
-                        final v = (val ?? '').trim();
-                        if (v.isEmpty) return 'Email kampus wajib diisi';
-                        if (!v.contains('@') || !v.contains('.')) {
-                          return 'Format email kampus tidak valid';
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Email kampus wajib diisi';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Format email tidak valid';
                         }
                         return null;
                       },
@@ -161,59 +154,34 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      textInputAction:
-                          _isLogin ? TextInputAction.done : TextInputAction.next,
-                      onFieldSubmitted: (_) {
-                        if (_isLogin && !_isLoading) _handleSubmit();
-                      },
+                      obscureText: true,
                       decoration: InputDecoration(
                         hintText: 'Password',
                         prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF4A78D0)),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                            color: Colors.grey,
-                          ),
-                          onPressed: () =>
-                              setState(() => _obscurePassword = !_obscurePassword),
-                        ),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                         contentPadding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      validator: (val) {
-                        if (val == null || val.length < 6) {
+                      validator: (value) {
+                        if (value == null || value.length < 6) {
                           return 'Password minimal 6 karakter';
                         }
                         return null;
                       },
                     ),
-                    if (!_isLogin) ...[
+                    if (!isLogin) ...[
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _confirmPasswordController,
-                        obscureText: _obscureConfirm,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) {
-                          if (!_isLoading) _handleSubmit();
-                        },
+                        obscureText: true,
                         decoration: InputDecoration(
                           hintText: 'Konfirmasi Password',
                           prefixIcon: const Icon(Icons.lock_reset, color: Color(0xFF4A78D0)),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureConfirm ? Icons.visibility_off : Icons.visibility,
-                              color: Colors.grey,
-                            ),
-                            onPressed: () =>
-                                setState(() => _obscureConfirm = !_obscureConfirm),
-                          ),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           contentPadding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        validator: (val) {
-                          if (val != _passwordController.text) {
-                            return 'Konfirmasi password tidak cocok';
+                        validator: (value) {
+                          if (value != _passwordController.text) {
+                            return 'Password tidak cocok';
                           }
                           return null;
                         },
@@ -221,7 +189,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ],
                     const SizedBox(height: 32),
                     ElevatedButton(
-                      onPressed: _isLoading ? null : _handleSubmit,
+                      onPressed: isLoading ? null : _submitAuth,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD9383A),
                         foregroundColor: Colors.white,
@@ -230,7 +198,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           borderRadius: BorderRadius.circular(24),
                         ),
                       ),
-                      child: _isLoading
+                      child: isLoading
                           ? const SizedBox(
                               height: 20,
                               width: 20,
@@ -240,11 +208,8 @@ class _AuthScreenState extends State<AuthScreen> {
                               ),
                             )
                           : Text(
-                              _isLogin ? 'Masuk' : 'Daftar Sekarang',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              isLogin ? 'Masuk' : 'Daftar Sekarang',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                     ),
                     const SizedBox(height: 16),
@@ -252,13 +217,20 @@ class _AuthScreenState extends State<AuthScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          _isLogin ? 'Belum punya akun? ' : 'Sudah punya akun? ',
+                          isLogin ? 'Belum punya akun? ' : 'Sudah punya akun? ',
                           style: const TextStyle(color: Colors.grey),
                         ),
                         GestureDetector(
-                          onTap: _isLoading ? null : _toggleMode,
+                          onTap: isLoading
+                              ? null
+                              : () {
+                                  setState(() {
+                                    isLogin = !isLogin;
+                                    _formKey.currentState?.reset();
+                                  });
+                                },
                           child: Text(
-                            _isLogin ? 'Daftar dulu' : 'Masuk di sini',
+                            isLogin ? 'Daftar dulu' : 'Masuk di sini',
                             style: const TextStyle(
                               color: Color(0xFF4A78D0),
                               fontWeight: FontWeight.bold,
