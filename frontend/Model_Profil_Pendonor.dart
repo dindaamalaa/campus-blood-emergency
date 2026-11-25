@@ -1,4 +1,4 @@
-class PendonorProfile {
+class DonorProfile {
   final int? idPendonor;
   final int? userId;
   final String namaLengkap;
@@ -8,7 +8,7 @@ class PendonorProfile {
   final String golonganDarah;
   final bool bersediaDonor;
 
-  PendonorProfile({
+  const DonorProfile({
     this.idPendonor,
     this.userId,
     required this.namaLengkap,
@@ -19,24 +19,33 @@ class PendonorProfile {
     required this.bersediaDonor,
   });
 
-  factory PendonorProfile.fromJson(Map<String, dynamic> json) {
+  factory DonorProfile.fromJson(Map<String, dynamic> json) {
     final rawBersedia = json['bersedia_donor'];
-    final isBersedia = rawBersedia == true || rawBersedia == 1 || rawBersedia == '1';
+    final bool isWilling = rawBersedia == true ||
+        rawBersedia == 1 ||
+        rawBersedia?.toString() == '1' ||
+        rawBersedia?.toString().toLowerCase() == 'true';
 
-    return PendonorProfile(
-      idPendonor: json['id_pendonor'] as int?,
-      userId: json['user_id'] as int?,
-      namaLengkap: (json['nama_lengkap'] ?? '').toString(),
-      nimIdCivitas: (json['nim_id_civitas'] ?? '').toString(),
-      noTelepon: (json['no_telepon'] ?? '').toString(),
-      fakultasUnit: (json['fakultas_unit'] ?? '').toString(),
-      golonganDarah: (json['golongan_darah'] ?? 'Belum Tahu').toString(),
-      bersediaDonor: isBersedia,
+    return DonorProfile(
+      idPendonor: json['id_pendonor'] is int
+          ? json['id_pendonor'] as int
+          : int.tryParse(json['id_pendonor']?.toString() ?? ''),
+      userId: json['user_id'] is int
+          ? json['user_id'] as int
+          : int.tryParse(json['user_id']?.toString() ?? ''),
+      namaLengkap: json['nama_lengkap']?.toString() ?? '',
+      nimIdCivitas: json['nim_id_civitas']?.toString() ?? '',
+      noTelepon: json['no_telepon']?.toString() ?? '',
+      fakultasUnit: json['fakultas_unit']?.toString() ?? '',
+      golonganDarah: json['golongan_darah']?.toString() ?? 'Belum Tahu',
+      bersediaDonor: isWilling,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      if (idPendonor != null) 'id_pendonor': idPendonor,
+      if (userId != null) 'user_id': userId,
       'nama_lengkap': namaLengkap,
       'nim_id_civitas': nimIdCivitas,
       'no_telepon': noTelepon,
