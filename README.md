@@ -1,4 +1,4 @@
-##🩸 Campus Blood Emergency
+#🩸 Campus Blood Emergency#
 
 Campus Blood Emergency merupakan proyek pengembangan aplikasi berbasis teknologi informasi yang dirancang untuk membantu pengelolaan informasi donor darah di lingkungan kampus.
 
@@ -6,7 +6,7 @@ Project ini dikembangkan sebagai bagian dari tugas mata kuliah Rekayasa Perangka
 
 ---
 
-##📌 About Project
+##📌 About Project#
 
 Campus Blood Emergency merupakan aplikasi yang dikembangkan untuk mendukung penyampaian informasi dan pengelolaan kegiatan donor darah di lingkungan kampus.
 
