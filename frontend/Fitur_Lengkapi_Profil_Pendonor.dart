@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../models/donor_profile.dart';
 import '../../services/api_service.dart';
 import '../home/home_screen.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
-  const CompleteProfileScreen({super.key});
+  final DonorProfile? existingProfile;
+
+  const CompleteProfileScreen({super.key, this.existingProfile});
 
   @override
   State<CompleteProfileScreen> createState() => _CompleteProfileScreenState();
@@ -11,16 +14,28 @@ class CompleteProfileScreen extends StatefulWidget {
 
 class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _nimController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _facultyController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _nimController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _facultyController;
 
-  String _selectedBloodType = 'A';
-  bool _isWillingToDonate = true;
+  late String _selectedBloodType;
+  late bool _isWillingToDonate;
   bool _isSaving = false;
 
   final List<String> _bloodTypes = ['A', 'B', 'AB', 'O', 'Belum Tahu'];
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existingProfile;
+    _nameController = TextEditingController(text: existing?.namaLengkap ?? '');
+    _nimController = TextEditingController(text: existing?.nimIdCivitas ?? '');
+    _phoneController = TextEditingController(text: existing?.noTelepon ?? '');
+    _facultyController = TextEditingController(text: existing?.fakultasUnit ?? '');
+    _selectedBloodType = existing?.golonganDarah ?? 'A';
+    _isWillingToDonate = existing?.bersediaDonor ?? true;
+  }
 
   void _showError(String msg) {
     if (!mounted) return;
@@ -38,7 +53,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final result = await ApiService.savePendonorProfile(
+      final profileInput = DonorProfile(
         namaLengkap: _nameController.text.trim(),
         nimIdCivitas: _nimController.text.trim(),
         noTelepon: _phoneController.text.trim(),
@@ -47,20 +62,22 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         bersediaDonor: _isWillingToDonate,
       );
 
-      final data = result['data'] as Map<String, dynamic>;
+      final result = await ApiService.savePendonorProfile(profileInput);
+
       if (result['ok'] == true) {
+        final savedProfile = (result['profile'] as DonorProfile?) ?? profileInput;
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => HomeScreen(
               showSuccessBanner: true,
-              initialProfile: data['profile'] as Map<String, dynamic>?,
+              initialProfile: savedProfile,
             ),
           ),
         );
       } else {
-        _showError(data['message'] ?? 'Gagal menyimpan profil');
+        _showError(result['message'] ?? 'Gagal menyimpan profil');
       }
     } catch (e) {
       _showError('Gagal terhubung ke server: $e');
