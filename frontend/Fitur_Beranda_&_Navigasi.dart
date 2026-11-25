@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../models/donor_profile.dart';
 import '../../services/api_service.dart';
+import '../profile/complete_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool showSuccessBanner;
-  final Map<String, dynamic>? initialProfile;
+  final DonorProfile? initialProfile;
 
   const HomeScreen({
     super.key,
@@ -17,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  Map<String, dynamic>? _profile;
+  DonorProfile? _profile;
 
   @override
   void initState() {
@@ -30,10 +32,10 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final result = await ApiService.getBeranda();
       if (result['ok'] == true && mounted) {
-        final data = result['data'] as Map<String, dynamic>;
-        setState(() {
-          _profile = data['profile'] as Map<String, dynamic>? ?? _profile;
-        });
+        final fetched = result['profile'] as DonorProfile?;
+        if (fetched != null) {
+          setState(() => _profile = fetched);
+        }
       }
     } catch (_) {
       // Tetap gunakan data awal jika gagal refresh
@@ -71,8 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBerandaContent() {
-    final nama = _profile?['nama_lengkap']?.toString();
-    final golDarah = _profile?['golongan_darah']?.toString();
+    final nama = _profile?.namaLengkap;
+    final golDarah = _profile?.golonganDarah;
     final greeting = (nama != null && nama.isNotEmpty) ? 'Halo, $nama!' : 'Halo, Pendonor!';
 
     return SingleChildScrollView(
@@ -183,53 +185,63 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE8F5E9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check, color: Color(0xFF2E7D32), size: 18),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CompleteProfileScreen(existingProfile: _profile),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Profil sudah lengkap',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        golDarah != null
-                            ? 'Golongan darah: $golDarah • Kelola identitas'
-                            : 'Kelola identitas dan golongan darah',
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Lihat profil',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFFD9383A),
-                          fontWeight: FontWeight.w600,
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE8F5E9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check, color: Color(0xFF2E7D32), size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Profil sudah lengkap',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          golDarah != null
+                              ? 'Golongan darah: $golDarah • Kelola identitas'
+                              : 'Kelola identitas dan golongan darah',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Lihat profil',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFD9383A),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
-              ],
+                  const Icon(Icons.chevron_right, color: Colors.grey),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),
