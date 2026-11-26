@@ -58,3 +58,52 @@ campus-blood-emergency/
 ├── README.md         # Project documentation
 ├── .gitignore        # Git ignore configuration
 └── LICENSE           # Project license
+
+```
+
+## 🚀 Cara Instalasi dan Menjalankan
+
+### install 
+- [Node.js](https://nodejs.org) versi LTS
+- MySQL 8 (XAMPP/Laragon) dan phpMyAdmin
+
+### 1. Dapatkan kode
+**Download ZIP**
+1. Buka halaman repositori ini di GitHub.
+2. Klik tombol hijau **Code**, lalu pilih **Download ZIP**.
+3. Ekstrak file ZIP-nya (nama folder hasil ekstrak: `campus-blood-emergency-main`).
+
+### 2. Siapkan database
+1. Nyalakan MySQL, lalu buka phpMyAdmin.
+2. Buat database baru bernama `campus_blood_emergency`.
+3. Pilih database tersebut, buka tab **Import**, lalu pilih file `database/campus_blood_emergency.sql`.
+
+### 3. Atur koneksi database
+Buka `backend/server.js`, lalu sesuaikan bagian `createPool` dengan user dan password MySQL Anda.
+Bawaannya: user `root` dan password kosong.
+
+### 4. Jalankan server
+Buka terminal di folder `backend` (di Windows, gunakan **Command Prompt**
+agar tidak terblokir PowerShell), lalu jalankan:
+```bash
+npm install
+npm start
+```
+Jika muncul `Server Campus Blood Emergency berjalan di http://localhost:3000`, server sudah aktif.
+
+### 5. Buka aplikasi
+Buka **http://localhost:3000** di browser (jangan klik dua kali `index.html`).
+
+### Alur pemakaian
+1. Klik **Daftar di sini**, isi email kampus dan password (minimal 6 karakter).
+2. Lengkapi profil pendonor.
+3. Anda masuk ke Beranda. Lain kali cukup **Masuk** dengan akun yang sama.
+
+### Masalah umum
+| Gejala | Solusi |
+|---|---|
+| `npm is not recognized` | Pasang Node.js, lalu buka ulang terminal/VS Code. |
+| `running scripts is disabled` (PowerShell) | Gunakan Command Prompt, atau jalankan `npm.cmd install`. |
+| `ECONNREFUSED` / `Access denied` | MySQL belum menyala, atau user/password di `server.js` salah. |
+| `Unknown database` | Database `campus_blood_emergency` belum dibuat. |
+| `EADDRINUSE: port 3000` | Port dipakai program lain, tutup program itu dulu. |
