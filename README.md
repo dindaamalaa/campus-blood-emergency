@@ -78,11 +78,7 @@ campus-blood-emergency/
 2. Buat database baru bernama `campus_blood_emergency`.
 3. Pilih database tersebut, buka tab **Import**, lalu pilih file `database/campus_blood_emergency.sql`.
 
-### 3. Atur koneksi database
-Buka `backend/server.js`, lalu sesuaikan bagian `createPool` dengan user dan password MySQL Anda.
-Bawaannya: user `root` dan password kosong.
-
-### 4. Jalankan server
+### 3. Jalankan server
 Buka terminal di folder `backend` (di Windows, gunakan **Command Prompt**
 agar tidak terblokir PowerShell), lalu jalankan:
 ```bash
@@ -91,7 +87,7 @@ npm start
 ```
 Jika muncul `Server Campus Blood Emergency berjalan di http://localhost:3000`, server sudah aktif.
 
-### 5. Buka aplikasi
+### 4. Buka aplikasi
 Buka **http://localhost:3000** di browser (jangan klik dua kali `index.html`).
 
 ### Alur pemakaian
